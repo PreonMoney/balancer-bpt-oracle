@@ -3,7 +3,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { TimeUtils } from "../../time_utils"
 import {
   ChainlinkManager,
-  BalancerLpStablePoolPriceOracle, IDysonUniV3Vault, DysonUniV3LpPoolPriceOracle,
+  BalancerLpStablePoolPriceOracle, IDysonUniV3Vault, DysonUniV3LpPoolPriceOracle, DysonSmartVaultPriceOracle,
 } from "../../../typechain"
 import { PromiseOrValue } from "../../../typechain/common"
 
@@ -42,15 +42,15 @@ const assetUsdc: AssetStruct = {
   aggregator: "0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7",
 }
 
-const dysonUniStrategy = "0x06aF8069F69DF2717267AE8e57058de5DaC97771"
+const dysonSmartVaultStrategy = "0xeE3B4Ce32A6229ae15903CDa0A5Da92E739685f7"
 
-describe("BalancerComposable Prices tests", function () {
+describe("USDC Smart Vault Prices tests", function () {
   let snapshotBefore: string
   let snapshot: string
 
   let owner: SignerWithAddress
   let owner2: SignerWithAddress
-  let dysonUniV3LpPoolPriceOracle: DysonUniV3LpPoolPriceOracle
+  let dysonSmartVaultPriceOracle: DysonSmartVaultPriceOracle
   let chainlinkManager: ChainlinkManager
 
   before(async function () {
@@ -67,11 +67,11 @@ describe("BalancerComposable Prices tests", function () {
 
     console.log(`\n=============== deploy BalancerLpStablePoolPriceOracle ===============\n`)
 
-    dysonUniV3LpPoolPriceOracle = (await upgrades.deployProxy(await ethers.getContractFactory("DysonUniV3LpPoolPriceOracle"), [chainlinkManager.address], {
+    dysonSmartVaultPriceOracle = (await upgrades.deployProxy(await ethers.getContractFactory("DysonSmartVaultPriceOracle"), [chainlinkManager.address], {
       initializer: "initialize",
-    })) as DysonUniV3LpPoolPriceOracle
+    })) as DysonSmartVaultPriceOracle
 
-    console.log(`BalancerLpStablePoolPriceOracle deployed at ${dysonUniV3LpPoolPriceOracle.address}`)
+    console.log(`BalancerLpStablePoolPriceOracle deployed at ${dysonSmartVaultPriceOracle.address}`)
 
     await chainlinkManager.addAsset(assetMatic.asset, assetMatic.aggregator)
     await chainlinkManager.addAsset(assetStMatic.asset, assetStMatic.aggregator)
@@ -93,10 +93,9 @@ describe("BalancerComposable Prices tests", function () {
     await TimeUtils.rollback(snapshot)
   })
 
-  it("check dyson uni oracle prices", async function () {
-    // console.log("Matic price", formatUnits(await dysonUniV3LpPoolPriceOracle.price(stMaticBalancerPool), 18))
-    console.log("matic price", await chainlinkManager.getUSDPrice(assetMatic.asset))
-    const price = await dysonUniV3LpPoolPriceOracle.getPrice(dysonUniStrategy);
+  it("check dyson smart vault oracle prices", async function () {
+    console.log("usdc price", await chainlinkManager.getUSDPrice(assetUsdc.asset))
+    const price = await dysonSmartVaultPriceOracle.getPrice(dysonSmartVaultStrategy);
     console.log("price", price)
   })
 })

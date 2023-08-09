@@ -93,6 +93,8 @@ interface IDysonUniV3Vault {
 
     function setTimelock(address _timelock) external;
 
+    function strategy() external view returns (address);
+
     function symbol() external view returns (string memory);
 
     function timelock() external view returns (address);

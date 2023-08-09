@@ -19,7 +19,7 @@ import "./interfaces/IERC20Decimals.sol";
 contract DysonUniV3LpPoolPriceOracle is OwnableUpgradeable, IBasePriceOracle {
   address public chainlinkManager;
 
-  function initialize(IDysonUniV3Vault _dysonVault, address _chainlinkManager) public initializer {
+  function initialize(address _chainlinkManager) public initializer {
     __Ownable_init();
     chainlinkManager = _chainlinkManager;
   }
@@ -35,12 +35,15 @@ contract DysonUniV3LpPoolPriceOracle is OwnableUpgradeable, IBasePriceOracle {
 
   function _price(address underlying) internal view virtual returns (uint256) {
     IDysonUniV3Vault _dysonVault = IDysonUniV3Vault(underlying);
-    address _token0 = _dysonVault.token0();
-    address _token1 = _dysonVault.token1();
+    IStrategyRebalanceStakerUniV3 _strategy = IStrategyRebalanceStakerUniV3(_dysonVault.strategy());
+    IERC20Upgradeable _token0 = IERC20Upgradeable(_dysonVault.token0());
+    IERC20Upgradeable _token1 = IERC20Upgradeable(_dysonVault.token1());
+    uint256 _amount0Held = _token0.balanceOf(address(_strategy));
+    uint256 _amount1Held = _token1.balanceOf(address(_strategy));
     IUniswapCalculator _uniswapCalculator = IUniswapCalculator(_dysonVault.uniswapCalculator());
     (uint256 _amount0, uint256 _amount1) = _getCollateralAmount(_dysonVault, _uniswapCalculator);
-    uint256 _token0Tvl = (_amount0 * _getWantPrice(_token0)) / (10 ** IERC20Decimals(_token0).decimals());
-    uint256 _token1Tvl = (_amount1 * _getWantPrice(_token1)) / (10 ** IERC20Decimals(_token1).decimals());
+    uint256 _token0Tvl = ((_amount0 + _amount0Held) * _getWantPrice(address(_token0))) / (10 ** IERC20Decimals(address(_token0)).decimals());
+    uint256 _token1Tvl = ((_amount1 + _amount1Held) * _getWantPrice(address(_token1))) / (10 ** IERC20Decimals(address(_token1)).decimals());
     uint256 _tokenTvl = _token0Tvl + _token1Tvl;
 
     return _tokenTvl;
